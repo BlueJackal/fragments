@@ -12,5 +12,8 @@
     "url": "git+https://github.com/BlueJackal/fragments.git"
   },
   "author": "Christopher Simon",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "prettier": "3.4.2"
+  }
 }
