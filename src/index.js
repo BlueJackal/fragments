@@ -3,6 +3,8 @@
 // Read environment variables from an .env file (if present)
 // NOTE: we only need to do this once, here in our app's main entry point.
 require('dotenv').config();
+const app = require('./app');
+app.use('/', require('./routes'));
 
 // We want to log any crash cases so we can debug later from logs.
 const logger = require('./logger');
@@ -23,17 +25,3 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Start our server
 require('./server');
-
-app.get('/', (req, res) => {
-  // Clients shouldn't cache this response (always request it fresh)
-  // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#controlling_caching
-  res.setHeader('Cache-Control', 'no-cache');
-
-  // Send a 200 'OK' response with info about our repo
-  res.status(200).json({
-    status: 'ok',
-    author,
-    githubUrl: 'https://github.com/BlueJackal/fragments',
-    version,
-  });
-});

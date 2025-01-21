@@ -4,6 +4,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
+const passport = require('passport');
+const authenticate = require('./auth');
 
 // author and version from our package.json file
 const { author, version } = require('../package.json');
@@ -36,6 +38,13 @@ app.use(compression());
 // Define our routes
 app.use('/', require('./routes'));
 
+// Use gzip/deflate compression middleware
+app.use(compression());
+
+// Set up our passport authentication middleware
+passport.use(authenticate.strategy());
+app.use(passport.initialize());
+
 // Add 404 middleware to handle any requests for resources that can't be found
 app.use((req, res) => {
   res.status(404).json({
@@ -46,6 +55,9 @@ app.use((req, res) => {
     },
   });
 });
+
+// Define our routes
+app.use('/', require('./routes'));
 
 // Add error-handling middleware to deal with anything else
 // eslint-disable-next-line no-unused-vars
