@@ -8,20 +8,15 @@ const { version, author } = require('../../package.json');
 // Our authentication middleware
 const { authenticate } = require('../auth');
 
+// Create a router that we can use to mount our API
+const router = express.Router(); // Initialize router before use
+
 /**
  * Expose all of our API routes on /v1/* to include an API version.
  * Protect them all with middleware so you have to be authenticated
  * in order to access things.
  */
 router.use(`/v1`, authenticate(), require('./api'));
-
-// Create a router that we can use to mount our API
-const router = express.Router();
-
-/**
- * Expose all of our API routes on /v1/* to include an API version.
- */
-router.use(`/v1`, require('./api'));
 
 /**
  * Define a simple health check route. If the server is running

@@ -3,11 +3,11 @@
 // Read environment variables from an .env file (if present)
 // NOTE: we only need to do this once, here in our app's main entry point.
 require('dotenv').config();
-const app = require('./app');
-app.use('/', require('./routes'));
-
 // We want to log any crash cases so we can debug later from logs.
 const logger = require('./logger');
+
+const app = require('./app');
+app.use('/', require('./routes'));
 
 // If we're going to crash because of an uncaught exception, log it first.
 // https://nodejs.org/api/process.html#event-uncaughtexception
