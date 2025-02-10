@@ -3,7 +3,7 @@
 // Use crypto.randomUUID() to create unique IDs, see:
 // https://nodejs.org/api/crypto.html#cryptorandomuuidoptions
 const { randomUUID } = require('crypto');
-const { logger } = require('../logger');
+const logger = require('../logger');
 // Use https://www.npmjs.com/package/content-type to create/parse Content-Type headers
 const contentType = require('content-type');
 
@@ -19,19 +19,24 @@ const {
 
 class Fragment {
   constructor({ id, ownerId, created, updated, type, size = 0 }) {
+    logger.debug({ id, ownerId, type, size }, 'Initializing Fragment');
     if (!ownerId) {
+      logger.error('Fragment creation failed: Missing ownerId');
       throw new Error('fragment ownerId is required');
     }
 
     if (!type) {
+      logger.error('Fragment creation failed: Missing type');
       throw new Error('fragment type is required');
     }
 
     if (typeof size !== 'number' || size < 0) {
+      logger.error('Fragment creation failed: Invalid size');
       throw new Error('incorrect fragment size');
     }
 
     if (!Fragment.isSupportedType(type)) {
+      logger.error({ type }, 'Fragment creation failed: Unsupported type');
       throw new Error('unspported fragment type: ' + type);
     }
 
@@ -50,7 +55,14 @@ class Fragment {
    * @returns Promise<Array<Fragment>>
    */
   static async byUser(ownerId, expand = false) {
+    logger.debug({ ownerId, expand }, 'Fetching fragments by user');
+
     const fragments = await listFragments(ownerId, expand);
+
+    if (!fragments.length) {
+      logger.warn({ ownerId }, 'No fragments found for user');
+    }
+
     return expand ? fragments.map((f) => new Fragment(f)) : fragments;
   }
 
@@ -61,9 +73,15 @@ class Fragment {
    * @returns Promise<Fragment>
    */
   static async byId(ownerId, id) {
-    const metadata = await readFragment(ownerId, id);
-    if (!metadata) throw new Error('Fragment not found');
+    logger.debug({ ownerId, id }, 'Fetching fragment by ID');
 
+    const metadata = await readFragment(ownerId, id);
+    if (!metadata) {
+      logger.error({ ownerId, id }, 'Fragment not found');
+      throw new Error('Fragment not found');
+    }
+
+    logger.info({ ownerId, id }, 'Fragment retrieved');
     return new Fragment(metadata);
   }
 
@@ -74,7 +92,9 @@ class Fragment {
    * @returns Promise<void>
    */
   static async delete(ownerId, id) {
+    logger.debug({ ownerId, id }, 'Deleting fragment');
     await deleteFragment(ownerId, id);
+    logger.info({ ownerId, id }, 'Fragment deleted');
   }
 
   /**
@@ -91,6 +111,7 @@ class Fragment {
    * @returns Promise<Buffer>
    */
   async getData() {
+    logger.debug({ id: this.id, ownerId: this.ownerId }, 'Fetching fragment data');
     return await readFragmentData(this.ownerId, this.id);
   }
 
@@ -100,9 +121,16 @@ class Fragment {
    * @returns Promise<void>
    */
   async setData(data) {
+    logger.debug(
+      { id: this.id, ownerId: this.ownerId, size: data.length },
+      'Setting fragment data'
+    );
+
     if (!(data instanceof Buffer)) {
+      logger.error({ id: this.id, ownerId: this.ownerId }, 'Data must be a buffer');
       throw new Error('Cannot set data - data must be a buffer');
     }
+
     this.size = data.length;
     this.updated = new Date().toISOString();
     await writeFragmentData(this.ownerId, this.id, data);
@@ -145,7 +173,7 @@ class Fragment {
       const { type } = contentType.parse(value);
       return type === 'text/plain';
     } catch (err) {
-      logger.info(err);
+      logger.error({ err }, 'Invalid Content-Type format');
       return false;
     }
   }

@@ -1,3 +1,6 @@
+// src/model/data/memory/memory-db.js
+const logger = require('../../../logger');
+
 const validateKey = (key) => typeof key === 'string';
 
 class MemoryDB {
@@ -42,6 +45,7 @@ class MemoryDB {
     db[primaryKey] = db[primaryKey] || {};
     // Add the `value` to the `secondaryKey`
     db[primaryKey][secondaryKey] = value;
+    logger.debug('Fragment metadata saved');
     return Promise.resolve();
   }
 

@@ -1,4 +1,5 @@
 // src/model/data/index.js
+const logger = require('../../logger');
 
 /* ---------------------------------------------------
 
@@ -16,3 +17,4 @@ variable.
 // Note to self - if we just require ./memory it'll fetch the index file.
 // The index file will handle everything else we need from that directory.
 module.exports = require('./memory');
+logger.info({ id: this.id, ownerId: this.ownerId }, 'Fragment metadata saved');

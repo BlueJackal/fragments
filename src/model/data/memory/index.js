@@ -1,12 +1,13 @@
 // src/model/data/memory/index.js
 
 const MemoryDB = require('./memory-db');
+const logger = require('../../../logger');
 
 // Create two in-memory databases: one for fragment metadata and the other for raw data
 /* Note to self - metadata is paired with data, but kept separate to make queries easier.
    For example, if a fragment is a 10mb image, fetching all fragments with their data would suck. 
    Every time we create a new fragment, we store metadata and data separately, but
-   can reference easily reference each because they share the same primary/secondary keys. I'm understand this. Sweet. */
+   can reference easily reference each because they share the same primary/secondary keys. */
 
 const data = new MemoryDB();
 const metadata = new MemoryDB();
@@ -19,11 +20,12 @@ function writeFragment(fragment) {
   /* Note to self - serialization means converting data into a format that can be stored or transmitted.
      It's done because databases can't always store complex JavaScript objects, but strings are safe to store.
      JSON.stringify() and JSON.parse() are built in functions for converting to/from strings. */
+  logger.debug({ fragment }, 'Attempting to write fragment metadata');
 
   if (!fragment || !fragment.ownerId || !fragment.id || !fragment.type) {
-    throw new Error(
-      `Invalid fragment: Missing required fields. Received: ${JSON.stringify(fragment)}`
-    );
+    const errorMessage = `Invalid fragment: Missing required fields. Received: ${JSON.stringify(fragment)}`;
+    logger.error(errorMessage);
+    throw new Error(errorMessage);
   }
   const serialized = JSON.stringify(fragment);
   return metadata.put(fragment.ownerId, fragment.id, serialized);
@@ -37,15 +39,20 @@ async function readFragment(ownerId, id) {
 
   // Note to self - figure out why we do this further up the call stack
   const serialized = await metadata.get(ownerId, id);
+  if (!serialized) {
+    logger.warn({ ownerId, id }, 'Fragment not found');
+    return undefined;
+  }
+  logger.debug({ ownerId, id }, 'Fragment metadata retrieved');
   return typeof serialized === 'string' ? JSON.parse(serialized) : serialized;
 }
 
 // Write a fragment's data buffer to memory db. Returns a Promise
 function writeFragmentData(ownerId, id, buffer) {
   if (!ownerId || !id || !buffer) {
-    throw new Error(
-      `Invalid fragment: Missing required fields. Received: ${JSON.stringify(ownerId, id, buffer)}`
-    );
+    const errorMessage = `Invalid fragment: Missing required fields. Received: ${JSON.stringify({ ownerId, id, buffer })}`;
+    logger.error(errorMessage);
+    throw new Error(errorMessage);
   }
 
   return data.put(ownerId, id, buffer);
@@ -58,7 +65,15 @@ function readFragmentData(ownerId, id) {
 
 // Get a list of fragment ids/objects for the given user from memory db. Returns a Promise
 async function listFragments(ownerId, expand = false) {
+  logger.debug({ ownerId, expand }, 'Listing fragments');
+
   const fragments = await metadata.query(ownerId);
+  if (!fragments.length) {
+    logger.warn({ ownerId }, 'No fragments found');
+    return [];
+  }
+
+  logger.info({ ownerId, count: fragments.length }, ' fragments retrieved');
   const parsedFragments = fragments.map((fragment) => JSON.parse(fragment));
 
   // If we don't get anything back, or are supposed to give expanded fragments, return
@@ -72,12 +87,20 @@ async function listFragments(ownerId, expand = false) {
 
 // Delete a fragment's metadata and data from memory db. Returns a Promise
 function deleteFragment(ownerId, id) {
+  logger.debug({ ownerId, id }, 'Attempting to delete fragment');
+
   return Promise.all([
-    // Delete metadata
-    metadata.del(ownerId, id),
-    // Delete data
-    data.del(ownerId, id),
-  ]);
+    metadata.del(ownerId, id).catch((err) => {
+      logger.error({ ownerId, id, error: err.message }, 'Error deleting fragment metadata');
+      throw err;
+    }),
+    data.del(ownerId, id).catch((err) => {
+      logger.error({ ownerId, id, error: err.message }, 'Error deleting fragment data');
+      throw err;
+    }),
+  ]).then(() => {
+    logger.info({ ownerId, id }, 'Fragment deleted');
+  });
 }
 
 module.exports.listFragments = listFragments;
