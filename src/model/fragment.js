@@ -143,8 +143,17 @@ class Fragment {
    * @returns {string} fragment's mime type (without encoding)
    */
   get mimeType() {
-    const { type } = contentType.parse(this.type);
-    return type;
+    if (!this.type) {
+      logger.error({ fragment: this }, 'Fragment is missing type');
+      return undefined;
+    }
+    try {
+      const { type } = contentType.parse(this.type);
+      return type;
+    } catch (error) {
+      logger.error({ error, type: this.type }, 'Failed to parse Content-Type');
+      return undefined;
+    }
   }
 
   /**
