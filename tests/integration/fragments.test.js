@@ -4,7 +4,6 @@
 
 const request = require('supertest');
 const app = require('../../src/app');
-//const { writeFragment, readFragment, readFragmentData } = require('../../src/model/data');
 const hash = require('../../src/hash');
 
 describe('Fragments API (Basic Auth)', () => {

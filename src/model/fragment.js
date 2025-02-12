@@ -78,7 +78,7 @@ class Fragment {
     const metadata = await readFragment(ownerId, id);
     if (!metadata) {
       logger.error({ ownerId, id }, 'Fragment not found');
-      throw new Error(404, 'Fragment not found');
+      throw new Error('Fragment not found');
     }
 
     logger.info({ ownerId, id }, 'Fragment retrieved');

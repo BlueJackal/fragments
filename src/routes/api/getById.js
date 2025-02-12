@@ -2,6 +2,7 @@
 
 const { Fragment } = require('../../model/fragment');
 const logger = require('../../logger');
+const isTextFragment = require('../../utils/isTextFragment');
 
 // Get specific fragment
 // ownerId is fixed and tied to auth, so it will only retrieve frags for current user
@@ -17,13 +18,13 @@ module.exports = async (req, res) => {
     try {
       fragment = await Fragment.byId(ownerId, fragmentId);
     } catch (error) {
-      logger.warn({ ownerId, fragmentId }, 'No matching fragment found:' + error);
-      return res.status(404).json({ error: 'Fragment not found' });
-    }
+      logger.warn({ ownerId, fragmentId }, 'No matching fragment found: ' + error.message);
 
-    if (!fragment) {
-      logger.warn({ ownerId, fragmentId }, 'No matching fragment found for user');
-      return res.status(404).json({ error: 'No matching fragment found' });
+      if (error.message === 'Fragment not found') {
+        return res.status(404).json({ error: 'Fragment not found' });
+      }
+
+      res.status(500).json({ error: 'Error retrieving fragment', details: error.message });
     }
 
     // Debug metadata
@@ -35,35 +36,22 @@ module.exports = async (req, res) => {
       'Checking fragment type'
     );
 
-    if (!fragment.mimeType.startsWith('text/')) {
-      logger.warn(
-        { fragmentId, type: fragment.type, mimeType: fragment.mimeType },
-        'Unsupported fragment type: ' + fragment.type + ' only text fragments are supported.'
-      );
+    logger.debug('Checking if fragment type is supported.');
+
+    // Check fragment type
+    if (!isTextFragment(fragment)) {
       return res.status(415).json({
-        error:
-          'Unsupported fragment type: ' + fragment.type + ' only text fragments are supported.',
+        error: 'Only text fragments are supported',
       });
     }
 
-    if (!fragment) {
-      logger.warn({ ownerId, fragmentId }, 'No matching fragment found');
-      return res.status(404).json({ error: 'Fragment not found' });
-    }
+    logger.debug('Fragment type is supported:' + fragment.type);
 
+    logger.debug('Retreiving fragment data.');
     const data = await fragment.getData();
 
     // Log retrieved data
     logger.debug({ fragmentId, data: data.toString() }, 'Retrieved fragment data');
-
-    // Ensure the authenticated user owns this fragment
-    if (fragment.ownerId !== ownerId) {
-      logger.warn(
-        { requestedBy: ownerId, actualOwner: fragment.ownerId },
-        'Unauthorized access attempt'
-      );
-      return res.status(403).json({ error: 'Forbidden' });
-    }
 
     res.setHeader('Content-Type', fragment.mimeType);
     res.status(200).send(data.toString());
