@@ -128,4 +128,19 @@ describe('Fragments API (Basic Auth)', () => {
 
     expect(res.statusCode).toBe(401);
   });
+  test('GET /fragments returns 500 if there is a database error', async () => {
+    jest.resetModules();
+    jest.doMock('../../src/model/data', () => ({
+      listFragments: undefined,
+    }));
+
+    const app = require('../../src/app');
+
+    const res = await request(app).get('/v1/fragments').auth(validUser.email, validUser.password);
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body.error).toBe('Error retrieving fragments');
+
+    jest.resetModules();
+  });
 });

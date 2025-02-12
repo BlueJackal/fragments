@@ -39,12 +39,14 @@ app.use(compression());
 // Define our routes
 app.use('/', require('./routes'));
 
-// Use gzip/deflate compression middleware
-app.use(compression());
-
 // Set up our passport authentication middleware
 passport.use(authenticate.strategy());
 app.use(passport.initialize());
+
+// Route to force an internal server error (ONLY for testing)
+app.get('/test-error', (req, res, next) => {
+  next(new Error('unable to process request'));
+});
 
 // Add 404 middleware to handle any requests for resources that can't be found
 app.use((req, res) => {

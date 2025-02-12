@@ -22,22 +22,22 @@ class Fragment {
     logger.debug({ id, ownerId, type, size }, 'Initializing Fragment');
     if (!ownerId) {
       logger.error('Fragment creation failed: Missing ownerId');
-      throw new Error('fragment ownerId is required');
+      throw new Error(400, 'fragment ownerId is required');
     }
 
     if (!type) {
       logger.error('Fragment creation failed: Missing type');
-      throw new Error('fragment type is required');
+      throw new Error(400, 'fragment type is required');
     }
 
     if (typeof size !== 'number' || size < 0) {
       logger.error('Fragment creation failed: Invalid size');
-      throw new Error('incorrect fragment size');
+      throw new Error(400, 'incorrect fragment size');
     }
 
     if (!Fragment.isSupportedType(type)) {
       logger.error({ type }, 'Fragment creation failed: Unsupported type');
-      throw new Error('unspported fragment type: ' + type);
+      throw new Error(415, 'unspported fragment type: ' + type);
     }
 
     this.id = id || randomUUID(); // Short circuit - provides random id if not provided
@@ -78,7 +78,7 @@ class Fragment {
     const metadata = await readFragment(ownerId, id);
     if (!metadata) {
       logger.error({ ownerId, id }, 'Fragment not found');
-      throw new Error('Fragment not found');
+      throw new Error(404, 'Fragment not found');
     }
 
     logger.info({ ownerId, id }, 'Fragment retrieved');
