@@ -241,8 +241,8 @@ curl -i -u chris.m.simon1@gmail.com:userpassword http://localhost:8080/v1/fragme
 
 HTTP/1.1 200 OK
 Content-Type: text/plain
-Content-Length: 26
+Content-Length: 27
 
-Here's an example fragment
+This is an example fragment
 ```
   
