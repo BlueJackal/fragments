@@ -22,7 +22,7 @@ The microservice is secured via **AWS Cognito**, and only authenticated users ar
 
 1.1 **Clone the Repo**  
    ```bash
-   git clone https://github.com/<YourUserName>/fragments.git
+   git clone https://github.com/BlueJackal/fragments.git
    cd fragments
    ```
 
