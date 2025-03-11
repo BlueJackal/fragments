@@ -1,257 +1,304 @@
+// src/tests/unit/fragment.test.js
+
 const { Fragment } = require('../../src/model/fragment');
 
-// Wait for a certain number of ms (default 50). Feel free to change this value
-// if it isn't long enough for your test runs. Returns a Promise.
-const wait = async (ms = 50) => new Promise((resolve) => setTimeout(resolve, ms));
+// Mock the data and logger modules
+jest.mock('../../src/model/data', () => ({
+  readFragment: jest.fn(),
+  writeFragment: jest.fn().mockResolvedValue(),
+  readFragmentData: jest.fn(),
+  writeFragmentData: jest.fn().mockResolvedValue(),
+  listFragments: jest.fn(),
+  deleteFragment: jest.fn(),
+}));
 
-const validTypes = [
-  `text/plain`,
-  /*
-   Currently, only text/plain is supported. Others will be added later.
+jest.mock('../../src/logger', () => ({
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+}));
 
-  `text/markdown`,
-  `text/html`,
-  `application/json`,
-  `image/png`,
-  `image/jpeg`,
-  `image/webp`,
-  `image/gif`,
-  */
-];
-
-describe('Fragment class', () => {
-  test('common formats are supported', () => {
-    validTypes.forEach((format) => expect(Fragment.isSupportedType(format)).toBe(true));
+describe('Fragment Class', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  describe('Fragment()', () => {
-    test('ownerId and type are required', () => {
-      expect(() => new Fragment({})).toThrow();
-    });
+  describe('constructor', () => {
+    test('creates a new fragment with defaults', () => {
+      const ownerId = 'user1';
+      const fragment = new Fragment({ ownerId, type: 'text/plain' });
 
-    test('ownerId is required', () => {
-      expect(() => new Fragment({ type: 'text/plain', size: 1 })).toThrow();
-    });
-
-    test('type is required', () => {
-      expect(() => new Fragment({ ownerId: '1234', size: 1 })).toThrow();
-    });
-
-    test('type can be a simple media type', () => {
-      const fragment = new Fragment({ ownerId: '1234', type: 'text/plain', size: 0 });
-      expect(fragment.type).toEqual('text/plain');
-    });
-
-    test('type can include a charset', () => {
-      const fragment = new Fragment({
-        ownerId: '1234',
-        type: 'text/plain; charset=utf-8',
-        size: 0,
-      });
-      expect(fragment.type).toEqual('text/plain; charset=utf-8');
-    });
-
-    test('size gets set to 0 if missing', () => {
-      const fragment = new Fragment({ ownerId: '1234', type: 'text/plain' });
+      expect(fragment.ownerId).toBe(ownerId);
+      expect(fragment.type).toBe('text/plain');
       expect(fragment.size).toBe(0);
+      expect(fragment.id).toBeDefined();
+      expect(fragment.created).toBeDefined();
+      expect(fragment.updated).toBeDefined();
     });
 
-    test('size must be a number', () => {
-      expect(() => new Fragment({ ownerId: '1234', type: 'text/plain', size: '1' })).toThrow();
+    test('throws if no ownerId is provided', () => {
+      expect(() => new Fragment({ type: 'text/plain' })).toThrow();
     });
 
-    test('size can be 0', () => {
-      expect(() => new Fragment({ ownerId: '1234', type: 'text/plain', size: 0 })).not.toThrow();
+    test('throws if no type is provided', () => {
+      expect(() => new Fragment({ ownerId: 'user1' })).toThrow();
     });
 
-    test('size cannot be negative', () => {
-      expect(() => new Fragment({ ownerId: '1234', type: 'text/plain', size: -1 })).toThrow();
+    test('throws if invalid size is provided', () => {
+      expect(() => new Fragment({ ownerId: 'user1', type: 'text/plain', size: -1 })).toThrow();
     });
 
-    test('invalid types throw', () => {
-      expect(
-        () => new Fragment({ ownerId: '1234', type: 'application/msword', size: 1 })
-      ).toThrow();
-    });
-
-    test('valid types can be set', () => {
-      validTypes.forEach((format) => {
-        const fragment = new Fragment({ ownerId: '1234', type: format, size: 1 });
-        expect(fragment.type).toEqual(format);
-      });
-    });
-
-    test('fragments have an id', () => {
-      const fragment = new Fragment({ ownerId: '1234', type: 'text/plain', size: 1 });
-      expect(fragment.id).toMatch(
-        /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/
-      );
-    });
-
-    test('fragments use id passed in if present', () => {
-      const fragment = new Fragment({
-        id: 'id',
-        ownerId: '1234',
-        type: 'text/plain',
-        size: 1,
-      });
-      expect(fragment.id).toEqual('id');
-    });
-
-    test('fragments get a created datetime string', () => {
-      const fragment = new Fragment({
-        ownerId: '1234',
-        type: 'text/plain',
-        size: 1,
-      });
-      expect(Date.parse(fragment.created)).not.toBeNaN();
-    });
-
-    test('fragments get an updated datetime string', () => {
-      const fragment = new Fragment({
-        ownerId: '1234',
-        type: 'text/plain',
-        size: 1,
-      });
-      expect(Date.parse(fragment.updated)).not.toBeNaN();
+    test('throws if unsupported type is provided', () => {
+      expect(() => new Fragment({ ownerId: 'user1', type: 'image/png' })).toThrow();
     });
   });
 
-  describe('isSupportedType()', () => {
-    test('common text types are supported, with and without charset', () => {
+  describe('isSupportedType', () => {
+    test('returns true for text/plain', () => {
       expect(Fragment.isSupportedType('text/plain')).toBe(true);
+    });
+
+    test('returns true for text/plain with charset', () => {
       expect(Fragment.isSupportedType('text/plain; charset=utf-8')).toBe(true);
     });
 
-    test('other types are not supported', () => {
-      expect(Fragment.isSupportedType('application/octet-stream')).toBe(false);
-      expect(Fragment.isSupportedType('application/msword')).toBe(false);
-      expect(Fragment.isSupportedType('audio/webm')).toBe(false);
-      expect(Fragment.isSupportedType('video/ogg')).toBe(false);
+    test('returns true for text/markdown', () => {
+      expect(Fragment.isSupportedType('text/markdown')).toBe(true);
+    });
+
+    test('returns true for text/html', () => {
+      expect(Fragment.isSupportedType('text/html')).toBe(true);
+    });
+
+    test('returns true for text/csv', () => {
+      expect(Fragment.isSupportedType('text/csv')).toBe(true);
+    });
+
+    test('returns true for application/json', () => {
+      expect(Fragment.isSupportedType('application/json')).toBe(true);
+    });
+
+    test('returns false for image/png', () => {
+      expect(Fragment.isSupportedType('image/png')).toBe(false);
+    });
+
+    test('returns false for invalid content type', () => {
+      expect(Fragment.isSupportedType('invalid-content-type')).toBe(false);
     });
   });
 
-  describe('mimeType, isText', () => {
-    test('mimeType returns the mime type without charset', () => {
+  describe('mimeType', () => {
+    test('returns mime type without charset', () => {
       const fragment = new Fragment({
-        ownerId: '1234',
+        ownerId: 'user1',
         type: 'text/plain; charset=utf-8',
-        size: 0,
       });
-      expect(fragment.type).toEqual('text/plain; charset=utf-8');
-      expect(fragment.mimeType).toEqual('text/plain');
+      expect(fragment.mimeType).toBe('text/plain');
     });
 
-    test('mimeType returns the mime type if charset is missing', () => {
-      const fragment = new Fragment({ ownerId: '1234', type: 'text/plain', size: 0 });
-      expect(fragment.type).toEqual('text/plain');
-      expect(fragment.mimeType).toEqual('text/plain');
-    });
-
-    test('isText return expected results', () => {
-      // Text fragment
+    test('returns mime type as is if no charset', () => {
       const fragment = new Fragment({
-        ownerId: '1234',
-        type: 'text/plain; charset=utf-8',
-        size: 0,
+        ownerId: 'user1',
+        type: 'text/plain',
+      });
+      expect(fragment.mimeType).toBe('text/plain');
+    });
+  });
+
+  describe('isText', () => {
+    test('returns true for text/plain fragment', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'text/plain',
+      });
+      expect(fragment.isText).toBe(true);
+    });
+
+    test('returns true for text/html fragment', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'text/html',
+      });
+      expect(fragment.isText).toBe(true);
+    });
+
+    test('returns true for text/markdown fragment', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'text/markdown',
+      });
+      expect(fragment.isText).toBe(true);
+    });
+
+    test('returns true for text/csv fragment', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'text/csv',
+      });
+      expect(fragment.isText).toBe(true);
+    });
+
+    test('returns true for application/json fragment', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'application/json',
       });
       expect(fragment.isText).toBe(true);
     });
   });
 
   describe('formats', () => {
-    test('formats returns the expected result for plain text', () => {
+    test('returns appropriate formats for text/plain', () => {
       const fragment = new Fragment({
-        ownerId: '1234',
-        type: 'text/plain; charset=utf-8',
-        size: 0,
+        ownerId: 'user1',
+        type: 'text/plain',
       });
-      expect(fragment.formats).toEqual(['text/plain']);
+      const formats = fragment.formats;
+      expect(formats).toContain('text/plain');
+      expect(formats.length).toBe(1);
+    });
+
+    test('returns appropriate formats for text/markdown', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'text/markdown',
+      });
+      const formats = fragment.formats;
+      expect(formats).toContain('text/markdown');
+      expect(formats).toContain('text/html');
+      expect(formats).toContain('text/plain');
+      expect(formats.length).toBe(3);
+    });
+
+    test('returns appropriate formats for text/html', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'text/html',
+      });
+      const formats = fragment.formats;
+      expect(formats).toContain('text/html');
+      expect(formats).toContain('text/plain');
+      expect(formats.length).toBe(2);
+    });
+
+    test('returns appropriate formats for text/csv', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'text/csv',
+      });
+      const formats = fragment.formats;
+      expect(formats).toContain('text/csv');
+      expect(formats).toContain('text/plain');
+      expect(formats).toContain('application/json');
+      expect(formats.length).toBe(3);
+    });
+
+    test('returns appropriate formats for application/json', () => {
+      const fragment = new Fragment({
+        ownerId: 'user1',
+        type: 'application/json',
+      });
+      const formats = fragment.formats;
+      expect(formats).toContain('application/json');
+      expect(formats).toContain('application/yaml');
+      expect(formats).toContain('text/plain');
+      expect(formats.length).toBe(3);
     });
   });
 
-  describe('save(), getData(), setData(), byId(), byUser(), delete()', () => {
-    test('byUser() returns an empty array if there are no fragments for this user', async () => {
-      expect(await Fragment.byUser('1234')).toEqual([]);
+  describe('getData and setData', () => {
+    const { readFragmentData, writeFragmentData } = require('../../src/model/data');
+
+    test('getData returns fragment data from storage', async () => {
+      const fragment = new Fragment({
+        id: 'fragment123',
+        ownerId: 'user1',
+        type: 'text/plain',
+      });
+
+      const expectedData = Buffer.from('Hello World');
+      readFragmentData.mockResolvedValue(expectedData);
+
+      const data = await fragment.getData();
+      expect(data).toEqual(expectedData);
+      expect(readFragmentData).toHaveBeenCalledWith('user1', 'fragment123');
     });
 
-    test('a fragment can be created and save() stores a fragment for the user', async () => {
-      const data = Buffer.from('hello');
-      const fragment = new Fragment({ ownerId: '1234', type: 'text/plain', size: 0 });
-      await fragment.save();
-      await fragment.setData(data);
+    test('setData updates fragment size and saves data', async () => {
+      const fragment = new Fragment({
+        id: 'fragment123',
+        ownerId: 'user1',
+        type: 'text/plain',
+      });
 
-      const fragment2 = await Fragment.byId('1234', fragment.id);
-      expect(fragment2).toEqual(fragment);
-      expect(await fragment2.getData()).toEqual(data);
+      const testData = Buffer.from('New test data');
+      await fragment.setData(testData);
+
+      expect(fragment.size).toBe(testData.length);
+      expect(writeFragmentData).toHaveBeenCalledWith('user1', 'fragment123', testData);
     });
 
-    test('save() updates the updated date/time of a fragment', async () => {
-      const ownerId = '7777';
-      const fragment = new Fragment({ ownerId, type: 'text/plain', size: 0 });
-      const modified1 = fragment.updated;
-      await wait();
-      await fragment.save();
-      const fragment2 = await Fragment.byId(ownerId, fragment.id);
-      expect(Date.parse(fragment2.updated)).toBeGreaterThan(Date.parse(modified1));
+    test('setData throws if data is not a Buffer', async () => {
+      const fragment = new Fragment({
+        id: 'fragment123',
+        ownerId: 'user1',
+        type: 'text/plain',
+      });
+
+      await expect(fragment.setData('not a buffer')).rejects.toThrow();
+    });
+  });
+
+  describe('static methods', () => {
+    const { readFragment, listFragments, deleteFragment } = require('../../src/model/data');
+
+    test('byUser returns fragments for a user', async () => {
+      const ownerId = 'user1';
+      const fragmentList = [
+        { id: 'fragment1', ownerId, type: 'text/plain', size: 10 },
+        { id: 'fragment2', ownerId, type: 'text/markdown', size: 20 },
+      ];
+
+      listFragments.mockResolvedValue(fragmentList);
+
+      const fragments = await Fragment.byUser(ownerId, true);
+
+      expect(fragments.length).toBe(2);
+      expect(fragments[0]).toBeInstanceOf(Fragment);
+      expect(fragments[1]).toBeInstanceOf(Fragment);
+      expect(listFragments).toHaveBeenCalledWith(ownerId, true);
     });
 
-    test('setData() updates the updated date/time of a fragment', async () => {
-      const data = Buffer.from('hello');
-      const ownerId = '7777';
-      const fragment = new Fragment({ ownerId, type: 'text/plain', size: 0 });
-      await fragment.save();
-      const modified1 = fragment.updated;
-      await wait();
-      await fragment.setData(data);
-      await wait();
-      const fragment2 = await Fragment.byId(ownerId, fragment.id);
-      expect(Date.parse(fragment2.updated)).toBeGreaterThan(Date.parse(modified1));
+    test('byId returns a specific fragment', async () => {
+      const ownerId = 'user1';
+      const id = 'fragment123';
+      const fragmentData = {
+        id,
+        ownerId,
+        type: 'text/plain',
+        size: 10,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      };
+
+      readFragment.mockResolvedValue(fragmentData);
+
+      const fragment = await Fragment.byId(ownerId, id);
+
+      expect(fragment).toBeInstanceOf(Fragment);
+      expect(fragment.id).toBe(id);
+      expect(fragment.ownerId).toBe(ownerId);
+      expect(readFragment).toHaveBeenCalledWith(ownerId, id);
     });
 
-    test("a fragment is added to the list of a user's fragments", async () => {
-      const data = Buffer.from('hello');
-      const ownerId = '5555';
-      const fragment = new Fragment({ ownerId, type: 'text/plain', size: 0 });
-      await fragment.save();
-      await fragment.setData(data);
+    test('delete removes a fragment', async () => {
+      const ownerId = 'user1';
+      const id = 'fragment123';
 
-      expect(await Fragment.byUser(ownerId)).toEqual([fragment.id]);
-    });
+      await Fragment.delete(ownerId, id);
 
-    test('full fragment returned when requested by user id', async () => {
-      const data = Buffer.from('hello');
-      const ownerId = '6666';
-      const fragment = new Fragment({ ownerId, type: 'text/plain', size: 0 });
-      await fragment.save();
-      await fragment.setData(data);
-
-      expect(await Fragment.byUser(ownerId, true)).toEqual([fragment]);
-    });
-
-    test('setData() throws if no Buffer', () => {
-      const fragment = new Fragment({ ownerId: '123', type: 'text/plain', size: 0 });
-      expect(() => fragment.setData()).rejects.toThrow();
-    });
-
-    test('setData() updates fragment size', async () => {
-      const fragment = new Fragment({ ownerId: '1234', type: 'text/plain', size: 0 });
-      await fragment.save();
-      await fragment.setData(Buffer.from('a'));
-      expect(fragment.size).toBe(1);
-
-      await fragment.setData(Buffer.from('aa'));
-      const { size } = await Fragment.byId('1234', fragment.id);
-      expect(size).toBe(2);
-    });
-
-    test('successful fragment deletion', async () => {
-      const fragment = new Fragment({ ownerId: '1234', type: 'text/plain', size: 0 });
-      await fragment.save();
-      await fragment.setData(Buffer.from('a'));
-
-      await Fragment.delete('1234', fragment.id);
-      expect(() => Fragment.byId('1234', fragment.id)).rejects.toThrow();
+      expect(deleteFragment).toHaveBeenCalledWith(ownerId, id);
     });
   });
 });

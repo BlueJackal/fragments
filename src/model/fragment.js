@@ -161,7 +161,7 @@ class Fragment {
    * @returns {boolean} true if fragment's type is text/*
    */
   get isText() {
-    return this.mimeType.startsWith('text/');
+    return this.mimeType.startsWith('text/') || this.mimeType === 'application/json';
   }
 
   /**
@@ -169,7 +169,36 @@ class Fragment {
    * @returns {Array<string>} list of supported mime types
    */
   get formats() {
-    return ['text/plain']; // More will be added later
+    const mimeType = this.mimeType;
+
+    // Default format is always the original type
+    const formats = [mimeType];
+
+    switch (mimeType) {
+      case 'text/plain':
+        // text/plain can only be returned as text/plain
+        break;
+      case 'text/markdown':
+        formats.push('text/html', 'text/plain');
+        break;
+      case 'text/html':
+        formats.push('text/plain');
+        break;
+      case 'text/csv':
+        formats.push('text/plain', 'application/json');
+        break;
+      case 'application/json':
+        formats.push('application/yaml', 'text/plain');
+        break;
+      default:
+        // Any other text/* type can be returned as text/plain
+        if (mimeType.startsWith('text/')) {
+          formats.push('text/plain');
+        }
+        break;
+    }
+
+    return formats;
   }
 
   /**
@@ -180,7 +209,7 @@ class Fragment {
   static isSupportedType(value) {
     try {
       const { type } = contentType.parse(value);
-      return type === 'text/plain';
+      return type.startsWith('text/') || type === 'application/json';
     } catch (err) {
       logger.error({ err }, 'Invalid Content-Type format');
       return false;

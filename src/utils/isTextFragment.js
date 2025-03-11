@@ -8,8 +8,11 @@ function isTextFragment(fragment) {
     return false;
   }
 
-  if (!fragment.mimeType.startsWith('text/')) {
-    logger.warn(`Unsupported fragment type: ${fragment.type}. Only text fragments are supported.`);
+  // Update to support both text/* and application/json
+  if (!fragment.mimeType.startsWith('text/') && fragment.mimeType !== 'application/json') {
+    logger.warn(
+      `Unsupported fragment type: ${fragment.type}. Only text and JSON fragments are supported.`
+    );
     return false;
   }
 
