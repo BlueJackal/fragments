@@ -8,7 +8,7 @@ function isTextFragment(fragment) {
     return false;
   }
 
-  // Update to support both text/* and application/json
+  // supports both text/* and application/json
   if (!fragment.mimeType.startsWith('text/') && fragment.mimeType !== 'application/json') {
     logger.warn(
       `Unsupported fragment type: ${fragment.type}. Only text and JSON fragments are supported.`

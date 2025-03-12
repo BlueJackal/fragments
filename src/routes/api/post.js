@@ -6,15 +6,31 @@ const { Fragment } = require('../../model/fragment');
 const logger = require('../../logger');
 const contentType = require('content-type');
 
-// POST /fragments
 router.post('/fragments', async (req, res) => {
   try {
-    // Ensure the request has a valid Content-Type header
+    // Ensure the request has a content type header
     if (!req.headers['content-type']) {
       logger.warn('Missing Content-Type header');
       return res.status(400).json({ error: 'Content-Type header is required' });
     }
 
+    /**
+     *  Content Type Validation
+     *
+     *  Checking if the content type meets HTTP specification (aka if it's a real type)
+     *
+     *  content-type is a library that lets us validate the content type that is sent along with
+     *  every HTTP request. It's used to indicate the media type of the resource, and it's located
+     *  in the HTTP header.
+     *
+     *  If the media type isn't a known one, we'll return an error.
+     *
+     *  Getting the MIME type is the next step. We further identify the format and determine how to handle it.
+     *
+     *  For example, parsing the content type would give us { type: 'text/plain', parameters: { charset: 'utf-8' } }
+     *  The mimeType would just be 'text/plain'.
+     *
+     */
     let parsedContentType;
     try {
       parsedContentType = contentType.parse(req.headers['content-type']);
@@ -25,7 +41,7 @@ router.post('/fragments', async (req, res) => {
 
     const mimeType = parsedContentType.type;
 
-    // Check if the type is supported
+    // Compare with our supported types
     if (!Fragment.isSupportedType(mimeType)) {
       logger.warn({ mimeType }, 'Unsupported Content-Type');
       return res.status(415).json({ error: 'Unsupported Content-Type' });
@@ -40,21 +56,21 @@ router.post('/fragments', async (req, res) => {
     // Extract user ID from the authenticated request
     const ownerId = req.user; // req.user is set globally by authentication middleware
 
-    // Create a new fragment
+    // Create new fragment metadata
     const fragment = new Fragment({
       ownerId,
       type: mimeType,
       size: req.body.length,
     });
 
-    // Save fragment metadata and data
+    // Save both the metadata and fragment data
     await fragment.save();
     await fragment.setData(req.body);
 
     /**
      * Location Header and API URL
      *
-     * When we create a new fragment, assign it an id, and store it.
+     * When we create a new fragment, we assign it an id and store it.
      *
      * Our server sends back a response saying it successfully created the fragment (201) and
      * it shares a *location header* that tells the client where to retrieve this new fragment.
