@@ -19,11 +19,11 @@ router.post('/fragments', async (req, res) => {
      *
      *  Checking if the content type meets HTTP specification (aka if it's a real type)
      *
-     *  content-type is a library that lets us validate the content type that is sent along with
-     *  every HTTP request. It's used to indicate the media type of the resource, and it's located
+     *  "content-type" is a library that lets us validate the content type sent along with
+     *  every HTTP request. It's used to indicate the media type of the resource, located
      *  in the HTTP header.
      *
-     *  If the media type isn't a known one, we'll return an error.
+     *  If the media type isn't a known one, we return an error.
      *
      *  Getting the MIME type is the next step. We further identify the format and determine how to handle it.
      *
