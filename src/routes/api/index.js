@@ -32,10 +32,13 @@ router.get('/fragments/:id', require('./getById'));
 // GET /fragments/:id/info - retrieve metadata for a specific fragment by ID
 router.get('/fragments/:id/info', require('./getByIdInfo'));
 
-// POST /fragments: add a new fragment with raw body parsing
+// POST /fragments: add a new fragment (with raw body parsing)
 router.post('/fragments', rawBody(), require('./post'));
 
-// PUT /fragments/:id - update an existing fragment with raw body parsing
+// PUT /fragments/:id - update an existing fragment (with raw body parsing)
 router.put('/fragments/:id', rawBody(), require('./put'));
+
+// DELETE /fragments/:id - delete an existing fragment
+router.delete('/fragments/:id', require('./delete'));
 
 module.exports = router;

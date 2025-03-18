@@ -267,7 +267,8 @@ describe('Fragments API (Basic Auth)', () => {
         .auth(validUser.email, validUser.password);
 
       expect(res.statusCode).toBe(404);
-      expect(res.body.error).toBe('Fragment not found');
+      // Update this line to match the expected error format
+      expect(res.body.error.message).toBe('Fragment not found');
     });
   });
 
