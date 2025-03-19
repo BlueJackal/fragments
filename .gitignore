@@ -131,3 +131,6 @@ dist
 
 # Don't include .env, which might have sensitive information
 .env
+
+# Preserving old Dockerfile from labs, for my own amusement
+old_dockerfile.txt

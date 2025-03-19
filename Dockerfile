@@ -4,20 +4,31 @@
 # Use node version 22.12.0
 # We want to make sure our image as close to our development environment as possible
 # If we update the version in our dev environment, we can update this version accordingly
-FROM node:22.12.0
 
+# We're using apline to cut down on file size while keeping all the features we need
+FROM node:22.12.0-alpine AS build
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+# This layer will be cached unless package.json changes
+COPY package*.json ./
+RUN npm ci --only=production --no-audit
+
+FROM node:22.12.0-alpine
+
+# This is our app metadata
 LABEL maintainer="Chris Simon <Chris.m.simon1@gmail.com>"
 LABEL description="Fragments node.js microservice"
 
-# We default to use port 8080 in our service
-ENV PORT=8080
+# From node best practices (https://docs.docker.com/build/building/best-practices/)
+# Create a non-root user to run the application
+RUN addgroup -S nodeapp && \
+    adduser -S -G nodeapp nodeapp
 
-# Reduce NPM spam when installing within Docker
-ENV NPM_CONFIG_LOGLEVEL=warn
-
-# Disable colour when run inside Docker
-ENV NPM_CONFIG_COLOR=false
-
+# Set working directory owned by non-root user
+WORKDIR /app
+RUN chown -R nodeapp:nodeapp /app
 
 # / / / /
 #
@@ -31,27 +42,27 @@ ENV NPM_CONFIG_COLOR=false
 #
 # / / / /
 
-# Use /app as our working directory
-# This will create an app directory if it doesn't exist, then enter it so
-# that all new commands are relevant to /app
-WORKDIR /app
+# Set environment variables
+ENV PORT=8080
+ENV NODE_ENV=production
+ENV NPM_CONFIG_LOGLEVEL=warn
+ENV NPM_CONFIG_COLOR=false
 
+# Copy package.json files to the production stage
+COPY --chown=nodeapp:nodeapp package*.json ./
 
-# Copy our applicatoin's package.json and package-lock.json files into the image
-# The trailing / tells docker that app is a directory and not a file
-COPY package*.json /app/
+# Copy only production dependencies from the build stage
+COPY --from=build --chown=nodeapp:nodeapp /app/node_modules /app/node_modules
 
-# Install node dependencies defined in package-lock.json
-RUN npm install
+# Copy application code
+COPY --chown=nodeapp:nodeapp ./src ./src
+COPY --chown=nodeapp:nodeapp ./tests/.htpasswd ./tests/.htpasswd
 
-# Copy src to /app/src/
-COPY ./src ./src
+# Switch to non-root user
+USER nodeapp
 
-# Copy our HTPASSWD file
-COPY ./tests/.htpasswd ./tests/.htpasswd
+# Expose the port the app runs on
+EXPOSE 8080
 
 # Start the container by running our server
 CMD ["npm", "start"]
-
-# We run our service on port 8080
-EXPOSE 8080

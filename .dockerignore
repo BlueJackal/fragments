@@ -9,6 +9,7 @@ eslint.config.mjs
 .gitignore
 .prettier*
 jest*
+old_dockerfile.txt
 # Exception for .htpasswd
 tests/
 !tests/.htpasswd
