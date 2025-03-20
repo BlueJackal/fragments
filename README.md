@@ -362,6 +362,23 @@ curl -i \
  http://localhost:8080/v1/fragments/4dcc65b6-9d57-453a-bd3a-63c107a51698
 ```
 
-6. Deployment
-   The service is containerized and runs on AWS EC2 using pre-built Docker Hub images. This eliminates the need for manual building on EC2 and simplifies deployment. 7. Testing
-   Unit test coverage is maintained at 80% or above, targeting all expected source files. Tests ensure proper functionality of fragment creation, retrieval, conversion, and metadata operations.
+**6. Deployment**
+The service is containerized and runs on AWS EC2 using pre-built Docker Hub images. This eliminates the need for manual building on EC2 and simplifies deployment.
+
+You'll need to configure `GitHub Secrets` for the following.
+
+First you'll need your `AWS Details`, which you can find in your AWS console. Alternatively, you can set it up to work with your own provider.
+
+`AWS AWS_ACCESS_KEY_ID` = AKIAIOSFODNN7EXAMPLE
+`AWS_SECRET_ACCESS_KEY`= wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+`AWS_SESSION_TOKEN`= AQoEXAMPLEH4aoAH0gNCAPy...
+
+Next, you'll need a DockerHub session token, as well as your DockerHub username as secrets to be able to create and push containers.
+
+`DOCKERHUB_TOKEN`= 3e5caf47-848d-454f-ace6-51d8EXAMPLETOKEN
+`DOCKERHUB_USERNAME` = yourDockerHubUsername
+
+7. Testing
+   Unit test coverage for fragments is maintained at 80% or above, targeting all expected source files.
+
+To test, type `npm run test` after the server has been installed.
