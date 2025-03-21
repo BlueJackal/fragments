@@ -370,15 +370,20 @@ You'll need to configure `GitHub Secrets` for the following.
 First you'll need your `AWS Details`, which you can find in your AWS console. Alternatively, you can set it up to work with your own provider.
 
 `AWS AWS_ACCESS_KEY_ID` = AKIAIOSFODNN7EXAMPLE
+
 `AWS_SECRET_ACCESS_KEY`= wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
 `AWS_SESSION_TOKEN`= AQoEXAMPLEH4aoAH0gNCAPy...
 
 Next, you'll need a DockerHub session token, as well as your DockerHub username as secrets to be able to create and push containers.
 
 `DOCKERHUB_TOKEN`= 3e5caf47-848d-454f-ace6-51d8EXAMPLETOKEN
+
 `DOCKERHUB_USERNAME` = yourDockerHubUsername
 
 7. Testing
    Unit test coverage for fragments is maintained at 80% or above, targeting all expected source files.
 
 To test, type `npm run test` after the server has been installed.
+
+To see test coverage, use `npm run coverage`.
