@@ -4,7 +4,7 @@
 const MemoryDB = require('../memory/memory-db');
 const logger = require('../../../logger');
 const s3Client = require('./s3Client');
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 // Create two in-memory databases: one for fragment metadata and the other for raw data
 /* Note to self - metadata is paired with data, but kept separate to make queries easier.
@@ -75,9 +75,50 @@ async function writeFragmentData(ownerId, id, data) {
   }
 }
 
-// Read a fragment's data from memory db. Returns a Promise
-function readFragmentData(ownerId, id) {
-  return data.get(ownerId, id);
+// Convert a stream of data into a Buffer, by collecting
+// chunks of data until finished, then assembling them together.
+// We wrap the whole thing in a Promise so it's easier to consume.
+const streamToBuffer = (stream) =>
+  new Promise((resolve, reject) => {
+    // As the data streams in, we'll collect it into an array.
+    const chunks = [];
+
+    // Streams have events that we can listen for and run
+    // code.  We need to know when new `data` is available,
+    // if there's an `error`, and when we're at the `end`
+    // of the stream.
+
+    // When there's data, add the chunk to our chunks list
+    stream.on('data', (chunk) => chunks.push(chunk));
+    // When there's an error, reject the Promise
+    stream.on('error', reject);
+    // When the stream is done, resolve with a new Buffer of our chunks
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+  });
+
+// Reads a fragment's data from S3 and returns (Promise<Buffer>)
+// https://github.com/awsdocs/aws-sdk-for-javascript-v3/blob/main/doc_source/s3-example-creating-buckets.md#getting-a-file-from-an-amazon-s3-bucket
+async function readFragmentData(ownerId, id) {
+  // Create the PUT API params from our details
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    // Our key will be a mix of the ownerID and fragment id, written as a path
+    Key: `${ownerId}/${id}`,
+  };
+
+  // Create a GET Object command to send to S3
+  const command = new GetObjectCommand(params);
+
+  try {
+    // Get the object from the Amazon S3 bucket. It is returned as a ReadableStream.
+    const data = await s3Client.send(command);
+    // Convert the ReadableStream to a Buffer
+    return streamToBuffer(data.Body);
+  } catch (err) {
+    const { Bucket, Key } = params;
+    logger.error({ err, Bucket, Key }, 'Error streaming fragment data from S3');
+    throw new Error('unable to read fragment data');
+  }
 }
 
 // Get a list of fragment ids/objects for the given user from memory db. Returns a Promise
@@ -103,21 +144,34 @@ async function listFragments(ownerId, expand = false) {
 }
 
 // Delete a fragment's metadata and data from memory db. Returns a Promise
-function deleteFragment(ownerId, id) {
+async function deleteFragment(ownerId, id) {
   logger.debug({ ownerId, id }, 'Attempting to delete fragment');
 
-  return Promise.all([
-    metadata.del(ownerId, id).catch((err) => {
+  // Create the params for deleting the object from S3
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: `${ownerId}/${id}`,
+  };
+
+  // Create a DELETE Object command to send to S3
+  const command = new DeleteObjectCommand(params);
+
+  try {
+    // First delete the metadata from our memory DB
+    await metadata.del(ownerId, id).catch((err) => {
       logger.error({ ownerId, id, error: err.message }, 'Error deleting fragment metadata');
       throw err;
-    }),
-    data.del(ownerId, id).catch((err) => {
-      logger.error({ ownerId, id, error: err.message }, 'Error deleting fragment data');
-      throw err;
-    }),
-  ]).then(() => {
-    logger.info({ ownerId, id }, 'Fragment deleted');
-  });
+    });
+
+    // Then delete the data from S3
+    await s3Client.send(command);
+    
+    logger.info({ ownerId, id }, 'Fragment deleted successfully');
+  } catch (err) {
+    const { Bucket, Key } = params;
+    logger.error({ err, Bucket, Key }, 'Error deleting fragment data from S3');
+    throw new Error('unable to delete fragment data');
+  }
 }
 
 module.exports.listFragments = listFragments;
