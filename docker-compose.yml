@@ -1,5 +1,3 @@
-# docker-compose.yml
-
 services:
   # Fragments microservice API server
   fragments:
@@ -27,6 +25,10 @@ services:
       # something else is defined in the env.
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-fragments}
       - AWS_DYNAMODB_TABLE_NAME=${AWS_DYNAMODB_TABLE_NAME:-fragments}
+      # Test credentials for LocalStack - these will only be used locally
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_SESSION_TOKEN=test
     # Ports to publish
     ports:
       - '8080:8080'
@@ -55,3 +57,7 @@ services:
       - SERVICES=s3
       # We're always working in us-east-1
       - DEFAULT_REGION=us-east-1
+      # Also add test credentials to LocalStack itself
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_SESSION_TOKEN=test
