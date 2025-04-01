@@ -14,7 +14,8 @@ variable.
 
 --------------------------------------------------- */
 
-// Note to self - if we just require ./memory it'll fetch the index file.
-// The index file will handle everything else we need from that directory.
-module.exports = require('./memory');
-logger.info({ id: this.id, ownerId: this.ownerId }, 'Fragment metadata saved');
+// If the environment sets an AWS Region, we'll use AWS backend
+// services (S3, DynamoDB); otherwise, we'll use an in-memory db.
+module.exports = process.env.AWS_REGION ? require('./aws') : require('./memory');
+
+//logger.info({ id: this.id, ownerId: this.ownerId }, 'Fragment metadata saved');
