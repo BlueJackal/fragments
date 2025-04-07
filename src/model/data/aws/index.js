@@ -12,7 +12,7 @@ const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aw
    Every time we create a new fragment, we store metadata and data separately, but
    can reference easily reference each because they share the same primary/secondary keys. */
 
-const data = new MemoryDB();
+// const data = new MemoryDB();
 const metadata = new MemoryDB();
 
 // Write a fragment's metadata to memory db. Returns a Promise<void>
