@@ -1,5 +1,7 @@
 // src/model/data/index.js
-// const logger = require('../../logger');
+
+// First, require the logger
+const logger = require('../../logger');
 
 /* ---------------------------------------------------
 
@@ -14,8 +16,15 @@ variable.
 
 --------------------------------------------------- */
 
-// If the environment sets an AWS Region, we'll use AWS backend
-// services (S3, DynamoDB); otherwise, we'll use an in-memory db.
-module.exports = process.env.AWS_REGION ? require('./aws') : require('./memory');
+// If we're in test environment, always use memory backend
+// Otherwise use AWS if AWS_REGION is configured, else use memory
+const isTestEnvironment = process.env.NODE_ENV === 'test' || typeof jest !== 'undefined';
 
-//logger.info({ id: this.id, ownerId: this.ownerId }, 'Fragment metadata saved');
+// Log which implementation we're using for debugging
+logger.debug(`Detected environment: ${isTestEnvironment ? 'test' : 'normal'}, AWS_REGION=${process.env.AWS_REGION}`);
+
+// IMPORTANT: Use isTestEnvironment in the decision logic
+// If in test env, always use memory; otherwise respect AWS_REGION setting
+module.exports = isTestEnvironment 
+  ? require('./memory') 
+  : (process.env.AWS_REGION ? require('./aws') : require('./memory'));
