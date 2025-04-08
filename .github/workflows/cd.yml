@@ -31,6 +31,7 @@ jobs:
       # Use buildx, which is faster and can optimize the build steps
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       # NOTE: ending and restarting the Learner Lab will void these secrets,
       # update them if you are doing this during a new session:
       # `Error: The security token included in the request is expired`
@@ -44,10 +45,20 @@ jobs:
           # Hard-code our region, which isn't a secret, and won't change
           aws-region: us-east-1
 
+      - name: Verify AWS Configuration
+        run: |
+          aws sts get-caller-identity
+          aws ecr describe-repositories --repository-names fragments || echo "Repository check failed"
+
       # Login to our ECR repository using the configured credentials
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Debug ECR Login
+        run: |
+          echo "ECR Registry: ${{ steps.login-ecr.outputs.registry }}"
+          echo "Docker Login Succeeded"
 
       # Build and Push an Image to Amazon ECR
       - name: Build and push to Amazon ECR
@@ -68,7 +79,15 @@ jobs:
           # Use the git tag version and `latest`
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ env.VERSION_TAG }}, ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:latest
 
- # We need to update our fragment's Task Definition JSON
+      - name: Verify ECR Push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPO: fragments
+          VERSION_TAG: ${{ github.ref_name }}
+        run: |
+          aws ecr describe-images --repository-name $ECR_REPO --image-ids imageTag=$VERSION_TAG
+
+      # We need to update our fragment's Task Definition JSON
       # to use the newly updated Docker Image and environment variables
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: update-task-def
