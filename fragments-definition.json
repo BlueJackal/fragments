@@ -1,12 +1,9 @@
 {
   "family": "fragments-task",
-  "executionRoleArn": "arn:aws:iam::184226208422:role/LabRole",
-  "taskRoleArn": "arn:aws:iam::184226208422:role/LabRole",
-  "networkMode": "awsvpc",
   "containerDefinitions": [
     {
       "name": "fragments-container",
-      "image": "184226208422.dkr.ecr.us-east-1.amazonaws.com/fragments:latest",
+      "image": "simonizer/fragments:latest",
       "essential": true,
       "portMappings": [
         {
@@ -72,6 +69,9 @@
       }
     }
   ],
+  "executionRoleArn": "arn:aws:iam::184226208422:role/LabRole",
+  "taskRoleArn": "arn:aws:iam::184226208422:role/LabRole",
+  "networkMode": "awsvpc",
   "requiresCompatibilities": [
     "FARGATE"
   ],
