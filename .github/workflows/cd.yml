@@ -102,17 +102,15 @@ jobs:
           # Use the image we just built and pushed to ECR for this tag
           image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ env.VERSION_TAG }}
           # Add all necessary environment variables WITHOUT AWS credentials
-          # NOTE: We're no longer including AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKENN
+          # NOTE: We're no longer including AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKE
           # since we're using IAM roles instead
           environment-variables: |
             LOG_LEVEL=info
             NODE_ENV=production
             PORT=80
-            # Keep your Cognito variables - they're still needed
             AWS_COGNITO_POOL_ID=us-east-1_59v1tcHFd
             AWS_COGNITO_CLIENT_ID=4vko4s45m9795767njrj9b62le
             AWS_REGION=us-east-1
-            # Make sure to include your API URL (ECS load balancer URL)
             API_URL=https://3.86.251.222
 
       # Deploy the updated task definition to ECS
