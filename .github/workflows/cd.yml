@@ -55,6 +55,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # ECR Debugging
       - name: Debug ECR Login
         run: |
           echo "ECR Registry: ${{ steps.login-ecr.outputs.registry }}"
@@ -79,6 +80,7 @@ jobs:
           # Use the git tag version and `latest`
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ env.VERSION_TAG }}, ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:latest
 
+      # ECR Debugging
       - name: Verify ECR Push
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -111,13 +113,12 @@ jobs:
             AWS_COGNITO_POOL_ID=us-east-1_59v1tcHFd
             AWS_COGNITO_CLIENT_ID=4vko4s45m9795767njrj9b62le
             AWS_REGION=us-east-1
-            API_URL=https://44.203.188.138
 
       # Deploy the updated task definition to ECS
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.update-task-def.outputs.task-definition }}
-          cluster: fragments-cluster
+          cluster: fragments-cluster2
           service: fragments-service
           wait-for-service-stability: true
