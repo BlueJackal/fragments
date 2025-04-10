@@ -114,7 +114,7 @@ jobs:
             AWS_COGNITO_CLIENT_ID=4vko4s45m9795767njrj9b62le
             AWS_REGION=us-east-1
 
-      # Deploy the updated task definition to ECS
+      # Deploy our updated task definition to ECS
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
