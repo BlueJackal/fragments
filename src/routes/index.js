@@ -8,6 +8,9 @@ const { version, author } = require('../../package.json');
 // Our authentication middleware
 const { authenticate } = require('../auth');
 
+// Getting hostname for ECS
+const { hostname } = require('os');
+
 // Create a router that we can use to mount our API
 const router = express.Router(); // Initialize router before use
 
@@ -28,10 +31,10 @@ router.get('/', (req, res) => {
   // Send a 200 'OK' response
   res.status(200).json({
     status: 'ok',
-    author,
-    // Use your own GitHub URL for this!
+    author: 'Your Name',
     githubUrl: 'https://github.com/BlueJackal/fragments',
     version,
+    hostname: hostname(), // added to see server name and track load balancer
   });
 });
 

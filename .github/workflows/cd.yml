@@ -111,7 +111,7 @@ jobs:
             AWS_COGNITO_POOL_ID=us-east-1_59v1tcHFd
             AWS_COGNITO_CLIENT_ID=4vko4s45m9795767njrj9b62le
             AWS_REGION=us-east-1
-            API_URL=https://3.86.251.222
+            API_URL=https://44.203.188.138
 
       # Deploy the updated task definition to ECS
       - name: Deploy Amazon ECS task definition

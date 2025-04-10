@@ -387,3 +387,5 @@ Next, you'll need a DockerHub session token, as well as your DockerHub username 
 To test, type `npm run test` after the server has been installed.
 
 To see test coverage, use `npm run coverage`.
+
+Testing will cover both unit tests and hurl tests.

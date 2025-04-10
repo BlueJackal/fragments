@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
       await Fragment.byId(ownerId, fragmentId);
       logger.debug({ fragmentId }, 'Fragment found, proceeding with deletion');
     } catch (error) {
-      // Fragment doesn't exist or other error
+      // The fragment doesn't exist or other error
       if (error.message === 'Fragment not found') {
         logger.warn({ ownerId, fragmentId }, 'Fragment not found for deletion');
         return res.status(404).json(createErrorResponse(404, 'Fragment not found'));
