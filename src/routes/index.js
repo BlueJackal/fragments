@@ -31,7 +31,7 @@ router.get('/', (req, res) => {
   // Send a 200 'OK' response
   res.status(200).json({
     status: 'ok',
-    author: 'Your Name',
+    author: 'Christopher Simon',
     githubUrl: 'https://github.com/BlueJackal/fragments',
     version,
     hostname: hostname(), // added to see server name and track load balancer
