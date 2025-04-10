@@ -85,8 +85,6 @@ jobs:
             LOG_LEVEL=info
             NODE_ENV=production
             API_URL=http://fragments-lb-1917697010.us-east-1.elb.amazonaws.com/
-            AWS_COGNITO_POOL_ID=us-east-1_59v1tcHFd
-            AWS_COGNITO_CLIENT_ID=4vko4s45m9795767njrj9b62le
             AWS_S3_BUCKET_NAME=csimon-fragments
 
       # Deploy our updated task definition to ECS

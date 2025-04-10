@@ -48,10 +48,6 @@
           "value": "https://3.86.251.222"
         },
         {
-          "name": "HTPASSWD_FILE",
-          "value": "tests/.htpasswd"
-        },
-        {
           "name": "AWS_DYNAMODB_TABLE_NAME",
           "value": "fragments"
         }
