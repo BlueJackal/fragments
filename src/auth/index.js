@@ -3,13 +3,15 @@
 // In test environments, be more flexible about auth configuration
 const isTestEnvironment = process.env.NODE_ENV === 'test' || typeof jest !== 'undefined';
 
+// Special flag to force this check even in test env (for testing this condition)
+const forceAuthCheck = process.env.FORCE_AUTH_CHECK === 'true';
+
 // Make sure our env isn't configured for both AWS Cognito and HTTP Basic Auth.
 // We can only do one or the other. If your .env file contains all 3 of these
 // variables, something is wrong. It should have AWS_COGNITO_POOL_ID and
 // AWS_COGNITO_CLIENT_ID together OR HTPASSWD_FILE on its own.
-// EXCEPTION: In test environments, we allow both to be configured but prefer one approach
 if (
-  !isTestEnvironment && 
+  (forceAuthCheck || !isTestEnvironment) && 
   process.env.AWS_COGNITO_POOL_ID &&
   process.env.AWS_COGNITO_CLIENT_ID &&
   process.env.HTPASSWD_FILE
@@ -25,7 +27,15 @@ if (isTestEnvironment && process.env.TEST_TYPE === 'unit' && process.env.HTPASSW
 }
 // Prefer Amazon Cognito for integration tests and production
 else if (process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID) {
-  module.exports = require('./cognito');
+  // During testing, we might not want to actually load cognito, so this flag allows us to bypass
+  if (isTestEnvironment && process.env.MOCK_COGNITO === 'true') {
+    module.exports = {
+      strategy: () => {},
+      authenticate: () => {}
+    };
+  } else {
+    module.exports = require('./cognito');
+  }
 }
 // Also allow for an .htpasswd file to be used, but not in production
 else if (process.env.HTPASSWD_FILE && process.NODE_ENV !== 'production') {

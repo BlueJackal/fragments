@@ -18,11 +18,11 @@ describe('Auth Module', () => {
     process.env.AWS_COGNITO_CLIENT_ID = 'test-client';
     process.env.HTPASSWD_FILE = 'test-htpasswd';
     
-    // Explicitly set NODE_ENV to production (not test)
-    process.env.NODE_ENV = 'production';
-    // Also ensure TEST_TYPE is not set
-    delete process.env.TEST_TYPE;
-
+    // Force the check even in test environment 
+    process.env.FORCE_AUTH_CHECK = 'true';
+    // Don't actually load cognito
+    process.env.MOCK_COGNITO = 'true';
+  
     expect(() => require('../../src/auth')).toThrow(
       'env contains configuration for both AWS Cognito and HTTP Basic Auth. Only one is allowed.'
     );
