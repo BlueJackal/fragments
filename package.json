@@ -5,14 +5,17 @@
   "description": "Fragments back-end API",
   "main": "index.js",
   "scripts": {
-    "test:watch": "jest -c jest.config.js --runInBand --watch --",
-    "test": "jest -c jest.config.js --runInBand --",
-    "coverage": "jest -c jest.config.js --runInBand --coverage",
+    "test:watch": "cross-env TEST_TYPE=unit jest -c jest.config.js --runInBand --watch --",
+    "test": "cross-env TEST_TYPE=unit jest -c jest.config.js --runInBand --",
+    "test:unit": "cross-env TEST_TYPE=unit jest -c jest.config.js --runInBand --testPathPattern=\"tests/unit/\"",
+    "coverage": "cross-env TEST_TYPE=unit jest -c jest.config.js --runInBand --coverage",
     "lint": "eslint \"./src/**/*.js\" \"tests/**/*.js\"",
     "start": "node src/index.js",
     "dev": "cross-env LOG_LEVEL=debug nodemon ./src/index.js --watch src",
     "debug": "cross-env LOG_LEVEL=debug nodemon --inspect=0.0.0.0:9229 ./src/index.js --watch src",
-    "test:integration": "env-cmd -f env.jest hurl --test --verbose --glob \"tests/integration/**/*.hurl\""
+    "test:integration": "cross-env TEST_TYPE=integration env-cmd -f env.jest hurl --test --verbose --glob \"tests/integration/**/*.hurl\"",
+    "test:lab10": "cross-env TEST_TYPE=integration env-cmd -f env.jest hurl --test --verbose tests/integration/lab10-dynamodb.hurl",
+    "test:all": "npm run test:unit && npm run test:integration"
   },
   "repository": {
     "type": "git",

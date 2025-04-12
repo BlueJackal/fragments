@@ -16,18 +16,37 @@ variable.
 
 --------------------------------------------------- */
 
-// Define test environment variable
+// Define test environment detection
 const isTestEnvironment = process.env.NODE_ENV === 'test' || typeof jest !== 'undefined';
-
-// Now you can use it in your log statement
-logger.debug(`Detected environment: ${isTestEnvironment ? 'test' : 'normal'}, AWS_REGION=${process.env.AWS_REGION}`);
+const isUnitTest = process.env.TEST_TYPE === 'unit';
+const isIntegrationTest = process.env.TEST_TYPE === 'integration';
 
 // Define if AWS is configured  
 const isAwsConfigured = !!process.env.AWS_REGION;
 
-// Fix the export logic to use AWS implementation when AWS is configured
-module.exports = isTestEnvironment && !isAwsConfigured
-  ? require('./memory')  // Only use memory for tests WITHOUT AWS config
-  : isAwsConfigured 
-    ? require('./aws')   // Use AWS when configured, even in tests
-    : require('./memory'); // Fall back to memory
+// Now you can use it in your log statement
+logger.debug(`Detected environment: ${isTestEnvironment ? 'test' : 'normal'}, 
+  AWS_REGION=${process.env.AWS_REGION || 'not set'}, 
+  TEST_TYPE=${process.env.TEST_TYPE || 'not set'}`);
+
+// TESTING STRATEGY DETERMINATION:
+// 1. Unit tests ALWAYS use memory implementation
+if (isUnitTest) {
+  logger.info('🟢 LOADING MEMORY IMPLEMENTATION (UNIT TEST)');
+  module.exports = require('./memory');
+} 
+// 2. Integration tests with AWS config use AWS
+else if (isIntegrationTest && isAwsConfigured) {
+  logger.info('🔵 LOADING AWS IMPLEMENTATION (INTEGRATION TEST)');
+  module.exports = require('./aws');
+}
+// 3. For normal operation, use AWS when configured
+else if (isAwsConfigured) {
+  logger.info('🔵 LOADING AWS IMPLEMENTATION (PRODUCTION)');
+  module.exports = require('./aws');
+} 
+// 4. Default to memory implementation
+else {
+  logger.info('🟢 LOADING MEMORY IMPLEMENTATION (DEFAULT)');
+  module.exports = require('./memory');
+}
