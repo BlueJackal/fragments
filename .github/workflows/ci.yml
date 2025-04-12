@@ -60,7 +60,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TEST_TYPE: unit
-      # Explicitly unset AWS_REGION for unit tests to ensure they use memory implementation
+      NODE_ENV: test
+      # Use HTTP Basic Auth for unit tests
+      HTPASSWD_FILE: tests/.htpasswd
+      # Explicitly unset AWS Cognito vars to avoid conflicts
+      AWS_COGNITO_POOL_ID: ""
+      AWS_COGNITO_CLIENT_ID: ""
+      # Explicitly unset AWS_REGION for unit tests
       AWS_REGION: ""
     steps:
       - name: Check out code

@@ -25,7 +25,13 @@ describe('Auth Module', () => {
   test('should require basic-auth if only HTPASSWD_FILE is set and not in production', () => {
     process.env.HTPASSWD_FILE = 'test-htpasswd';
     process.env.NODE_ENV = 'development'; // NOT production
-
+    // Make sure AWS Cognito vars are NOT set for this test
+    delete process.env.AWS_COGNITO_POOL_ID;
+    delete process.env.AWS_COGNITO_CLIENT_ID;
+    
+    // Mark as a unit test
+    process.env.TEST_TYPE = 'unit';
+  
     const authModule = require('../../src/auth');
     expect(authModule).toBeDefined();
   });

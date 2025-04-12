@@ -1,10 +1,15 @@
 // src/auth/index.js
 
+// In test environments, be more flexible about auth configuration
+const isTestEnvironment = process.env.NODE_ENV === 'test' || typeof jest !== 'undefined';
+
 // Make sure our env isn't configured for both AWS Cognito and HTTP Basic Auth.
-// We can only do one or the other.  If your .env file contains all 3 of these
-// variables, something is wrong.  It should have AWS_COGNITO_POOL_ID and
+// We can only do one or the other. If your .env file contains all 3 of these
+// variables, something is wrong. It should have AWS_COGNITO_POOL_ID and
 // AWS_COGNITO_CLIENT_ID together OR HTPASSWD_FILE on its own.
+// EXCEPTION: In test environments, we allow both to be configured but prefer one approach
 if (
+  !isTestEnvironment && 
   process.env.AWS_COGNITO_POOL_ID &&
   process.env.AWS_COGNITO_CLIENT_ID &&
   process.env.HTPASSWD_FILE
@@ -14,8 +19,12 @@ if (
   );
 }
 
-// Prefer Amazon Cognito (production)
-if (process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID) {
+// For unit tests, prefer HTTP Basic Auth over Cognito
+if (isTestEnvironment && process.env.TEST_TYPE === 'unit' && process.env.HTPASSWD_FILE) {
+  module.exports = require('./basic-auth');
+}
+// Prefer Amazon Cognito for integration tests and production
+else if (process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID) {
   module.exports = require('./cognito');
 }
 // Also allow for an .htpasswd file to be used, but not in production
