@@ -102,8 +102,15 @@ class Fragment {
    * @returns Promise<void>
    */
   async save() {
+    console.log('💾 SAVING FRAGMENT:', this);
     this.updated = new Date().toISOString();
-    await writeFragment(this);
+    try {
+      await writeFragment(this);
+      console.log('💾 FRAGMENT SAVED SUCCESSFULLY');
+    } catch (err) {
+      console.error('❌ ERROR SAVING FRAGMENT:', err);
+      throw err;
+    }
   }
 
   /**

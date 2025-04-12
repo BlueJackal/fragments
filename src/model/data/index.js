@@ -16,15 +16,18 @@ variable.
 
 --------------------------------------------------- */
 
-// If we're in test environment, always use memory backend
-// Otherwise use AWS if AWS_REGION is configured, else use memory
+// Define test environment variable
 const isTestEnvironment = process.env.NODE_ENV === 'test' || typeof jest !== 'undefined';
 
-// Log which implementation we're using for debugging
+// Now you can use it in your log statement
 logger.debug(`Detected environment: ${isTestEnvironment ? 'test' : 'normal'}, AWS_REGION=${process.env.AWS_REGION}`);
 
-// IMPORTANT: Use isTestEnvironment in the decision logic
-// If in test env, always use memory; otherwise respect AWS_REGION setting
-module.exports = isTestEnvironment 
-  ? require('./memory') 
-  : (process.env.AWS_REGION ? require('./aws') : require('./memory'));
+// Define if AWS is configured  
+const isAwsConfigured = !!process.env.AWS_REGION;
+
+// Fix the export logic to use AWS implementation when AWS is configured
+module.exports = isTestEnvironment && !isAwsConfigured
+  ? require('./memory')  // Only use memory for tests WITHOUT AWS config
+  : isAwsConfigured 
+    ? require('./aws')   // Use AWS when configured, even in tests
+    : require('./memory'); // Fall back to memory

@@ -3,6 +3,9 @@
 const MemoryDB = require('./memory-db');
 const logger = require('../../../logger');
 
+// At the beginning of memory/index.js
+console.log('🟢 LOADING MEMORY IMPLEMENTATION');
+
 // Create two in-memory databases: one for fragment metadata and the other for raw data
 /* Note to self - metadata is paired with data, but kept separate to make queries easier.
    For example, if a fragment is a 10mb image, fetching all fragments with their data would suck. 

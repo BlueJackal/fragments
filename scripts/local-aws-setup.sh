@@ -27,7 +27,7 @@ echo 'LocalStack S3 Ready'
 
 # Create our S3 bucket with LocalStack
 echo "Creating LocalStack S3 bucket: fragments"
-aws --endpoint-url=http://localhost:4566 s3api create-bucket --bucket fragments
+aws --endpoint-url=http://localhost:4566 s3api create-bucket --bucket csimon-fragments
 
 # Setup DynamoDB Table with dynamodb-local, see:
 # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/getting-started-step-1.html

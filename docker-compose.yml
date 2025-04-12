@@ -23,7 +23,7 @@ services:
       # This S3 bucket and DynamoDB table need to get created first, see
       # local-aws-setup.sh. We'll default to 'fragments' as the name, unless
       # something else is defined in the env.
-      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-fragments}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-csimon-fragments}
       - AWS_DYNAMODB_TABLE_NAME=${AWS_DYNAMODB_TABLE_NAME:-fragments}
       # Test credentials for LocalStack - these will only be used locally
       - AWS_ACCESS_KEY_ID=test
@@ -31,7 +31,7 @@ services:
       - AWS_SESSION_TOKEN=test
     # Ports to publish
     ports:
-      - '8080:8080'
+      - '8080:80'  # Changed from '8080:8080' to '8080:80'
 
   # DynamoDB Local, see: https://hub.docker.com/r/amazon/dynamodb-local
   dynamodb-local:
