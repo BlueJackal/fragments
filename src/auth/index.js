@@ -2,16 +2,14 @@
 
 // In test environments, be more flexible about auth configuration
 const isTestEnvironment = process.env.NODE_ENV === 'test' || typeof jest !== 'undefined';
+const isIntegrationTest = process.env.TEST_TYPE === 'integration';
 
 // Special flag to force this check even in test env (for testing this condition)
 const forceAuthCheck = process.env.FORCE_AUTH_CHECK === 'true';
 
-// Make sure our env isn't configured for both AWS Cognito and HTTP Basic Auth.
-// We can only do one or the other. If your .env file contains all 3 of these
-// variables, something is wrong. It should have AWS_COGNITO_POOL_ID and
-// AWS_COGNITO_CLIENT_ID together OR HTPASSWD_FILE on its own.
+// In production, don't allow both auth methods
 if (
-  (forceAuthCheck || !isTestEnvironment) && 
+  (forceAuthCheck || (!isTestEnvironment && process.env.NODE_ENV === 'production')) && 
   process.env.AWS_COGNITO_POOL_ID &&
   process.env.AWS_COGNITO_CLIENT_ID &&
   process.env.HTPASSWD_FILE
@@ -22,7 +20,7 @@ if (
 }
 
 // For integration tests, ALWAYS use HTTP Basic Auth
-if (isTestEnvironment && process.env.TEST_TYPE === 'integration' && process.env.HTPASSWD_FILE) {
+if (isIntegrationTest && process.env.HTPASSWD_FILE) {
   console.log('🔑 Using HTTP Basic Auth for integration tests');
   module.exports = require('./basic-auth');
 }
@@ -31,7 +29,7 @@ else if (isTestEnvironment && process.env.TEST_TYPE === 'unit' && process.env.HT
   console.log('🔑 Using HTTP Basic Auth for unit tests');
   module.exports = require('./basic-auth');
 }
-// Prefer Amazon Cognito for production
+// Prefer Amazon Cognito for production and non-test environments
 else if (process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID) {
   // During testing, we might not want to actually load cognito, so this flag allows us to bypass
   if (isTestEnvironment && process.env.MOCK_COGNITO === 'true') {
@@ -45,9 +43,9 @@ else if (process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID) {
     module.exports = require('./cognito');
   }
 }
-// Also allow for an .htpasswd file to be used, but not in production
-else if (process.env.HTPASSWD_FILE && process.env.NODE_ENV !== 'production') {
-  console.log('🔑 Using HTTP Basic Auth (non-test environment)');
+// Also allow for an .htpasswd file to be used
+else if (process.env.HTPASSWD_FILE) {
+  console.log('🔑 Using HTTP Basic Auth');
   module.exports = require('./basic-auth');
 }
 // In all other cases, we need to stop now and fix our config

@@ -11,7 +11,7 @@ services:
       # Our API will be running on http://localhost:8080
       - API_URL=http://localhost:8080
       # Remove HTPASSWD_FILE since we're using Cognito
-      # - HTPASSWD_FILE=tests/.htpasswd
+      - HTPASSWD_FILE=tests/.htpasswd
       # Use the LOG_LEVEL set in the host environment, or default to info
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - AWS_REGION=us-east-1
@@ -25,6 +25,9 @@ services:
       # something else is defined in the env.
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-csimon-fragments}
       - AWS_DYNAMODB_TABLE_NAME=${AWS_DYNAMODB_TABLE_NAME:-fragments}
+      # This is critical - tell the container it's in test mode
+      - NODE_ENV=test
+      - TEST_TYPE=integration
       # Test credentials for LocalStack - these will only be used locally
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test

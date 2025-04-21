@@ -85,39 +85,50 @@ jobs:
         run: npm run test:unit
 
   integration-tests:
-    name: Integration Tests
-    # Make this run after unit tests complete
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    env:
-      TEST_TYPE: integration
-      AWS_REGION: us-east-1
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+  name: Integration Tests
+  # Make this run after unit tests complete
+  needs: [unit-tests]
+  runs-on: ubuntu-latest
+  env:
+    TEST_TYPE: integration
+    NODE_ENV: test
+    AWS_REGION: us-east-1
+  steps:
+    - name: Check out code
+      uses: actions/checkout@v4
 
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: 'npm'
+    - name: Setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 'lts/*'
+        cache: 'npm'
 
-      - name: Install node dependencies
-        # NOTE: we need to install dev dependencies too vs. production only for hurl
-        run: npm install
+    - name: Install node dependencies
+      # NOTE: we need to install dev dependencies too vs. production only for hurl
+      run: npm install
 
-      - name: Build Containers
-        run: docker compose up -d
+    - name: Build Containers
+      run: docker compose up -d
 
-      - name: Ensure setup script is executable
-        # Ensure the script has the right permissions in case it was not committed as executable
-        run: chmod +x ./scripts/local-aws-setup.sh
+    - name: Ensure setup script is executable
+      # Ensure the script has the right permissions in case it was not committed as executable
+      run: chmod +x ./scripts/local-aws-setup.sh
 
-      - name: Setup Local AWS Resources
-        run: ./scripts/local-aws-setup.sh
+    - name: Setup Local AWS Resources
+      run: ./scripts/local-aws-setup.sh
 
-      - name: Run Integration Tests
-        run: npm run test:integration
+    - name: Run Integration Tests
+      run: |
+        # Set the environment variables
+        export TEST_TYPE=integration
+        export NODE_ENV=test
+        export AWS_REGION=us-east-1
+        export HTPASSWD_FILE=tests/.htpasswd
+        export AWS_S3_BUCKET_NAME=csimon-fragments
+        export AWS_DYNAMODB_TABLE_NAME=fragments
+        
+        # Run tests
+        npm run test:integration
 
   docker-hub:
     name: Build and Push to Docker Hub
