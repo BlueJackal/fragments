@@ -24,10 +24,23 @@ const isIntegrationTest = process.env.TEST_TYPE === 'integration';
 // Define if AWS is configured  
 const isAwsConfigured = !!process.env.AWS_REGION;
 
-// Now you can use it in your log statement
-logger.debug(`Detected environment: ${isTestEnvironment ? 'test' : 'normal'}, 
-  AWS_REGION=${process.env.AWS_REGION || 'not set'}, 
-  TEST_TYPE=${process.env.TEST_TYPE || 'not set'}`);
+// Enhanced debugging output
+logger.debug(`Storage backend environment detection:
+  isTestEnvironment: ${isTestEnvironment}
+  isUnitTest: ${isUnitTest}
+  isIntegrationTest: ${isIntegrationTest}
+  isAwsConfigured: ${isAwsConfigured}
+  NODE_ENV: ${process.env.NODE_ENV || 'not set'}
+  TEST_TYPE: ${process.env.TEST_TYPE || 'not set'}
+  AWS_REGION: ${process.env.AWS_REGION || 'not set'}
+  AWS_S3_ENDPOINT_URL: ${process.env.AWS_S3_ENDPOINT_URL || 'not set'}
+  AWS_DYNAMODB_ENDPOINT_URL: ${process.env.AWS_DYNAMODB_ENDPOINT_URL || 'not set'}
+  AWS_S3_BUCKET_NAME: ${process.env.AWS_S3_BUCKET_NAME || 'not set'}
+  AWS_DYNAMODB_TABLE_NAME: ${process.env.AWS_DYNAMODB_TABLE_NAME || 'not set'}
+  AWS_ACCESS_KEY_ID: ${process.env.AWS_ACCESS_KEY_ID ? 'set' : 'not set'}
+  AWS_SECRET_ACCESS_KEY: ${process.env.AWS_SECRET_ACCESS_KEY ? 'set' : 'not set'}
+  AWS_SESSION_TOKEN: ${process.env.AWS_SESSION_TOKEN ? 'set' : 'not set'}
+  HTPASSWD_FILE: ${process.env.HTPASSWD_FILE || 'not set'}`);
 
 // TESTING STRATEGY DETERMINATION:
 // 1. Unit tests ALWAYS use memory implementation

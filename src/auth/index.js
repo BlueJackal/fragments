@@ -21,24 +21,33 @@ if (
   );
 }
 
-// For unit tests, prefer HTTP Basic Auth over Cognito
-if (isTestEnvironment && process.env.TEST_TYPE === 'unit' && process.env.HTPASSWD_FILE) {
+// For integration tests, ALWAYS use HTTP Basic Auth
+if (isTestEnvironment && process.env.TEST_TYPE === 'integration' && process.env.HTPASSWD_FILE) {
+  console.log('🔑 Using HTTP Basic Auth for integration tests');
   module.exports = require('./basic-auth');
 }
-// Prefer Amazon Cognito for integration tests and production
+// For unit tests, prefer HTTP Basic Auth over Cognito
+else if (isTestEnvironment && process.env.TEST_TYPE === 'unit' && process.env.HTPASSWD_FILE) {
+  console.log('🔑 Using HTTP Basic Auth for unit tests');
+  module.exports = require('./basic-auth');
+}
+// Prefer Amazon Cognito for production
 else if (process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID) {
   // During testing, we might not want to actually load cognito, so this flag allows us to bypass
   if (isTestEnvironment && process.env.MOCK_COGNITO === 'true') {
+    console.log('🔑 Using mocked Cognito auth');
     module.exports = {
       strategy: () => {},
       authenticate: () => {}
     };
   } else {
+    console.log('🔑 Using Cognito auth');
     module.exports = require('./cognito');
   }
 }
 // Also allow for an .htpasswd file to be used, but not in production
-else if (process.env.HTPASSWD_FILE && process.NODE_ENV !== 'production') {
+else if (process.env.HTPASSWD_FILE && process.env.NODE_ENV !== 'production') {
+  console.log('🔑 Using HTTP Basic Auth (non-test environment)');
   module.exports = require('./basic-auth');
 }
 // In all other cases, we need to stop now and fix our config

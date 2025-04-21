@@ -381,11 +381,51 @@ Next, you'll need a DockerHub session token, as well as your DockerHub username 
 
 `DOCKERHUB_USERNAME` = yourDockerHubUsername
 
-7. Testing
+**7. Testing**
    Unit test coverage for fragments is maintained at 80% or above, targeting all expected source files.
 
-To test, type `npm run test` after the server has been installed.
+# Testing Guide
 
-To see test coverage, use `npm run coverage`.
+This project uses both unit tests and integration tests to ensure functionality. Unit tests verify individual components, while integration tests check the entire system including AWS services.
 
-Testing will cover both unit tests and hurl tests.
+## Prerequisites
+
+Before running tests, ensure you have:
+
+- Node.js and npm installed
+- Docker and Docker Compose installed
+- AWS CLI installed locally
+- Project dependencies installed (`npm install`)
+
+## Running Unit tests
+
+Unit tests use Jest and run without external dependencies. They test individual components using in-memory implementations.
+
+```bash
+# Run all unit tests
+npm run test:unit
+
+# Run a specific unit test file
+npm run test:unit -- tests/unit/file-name.test.js
+
+# Run unit tests with coverage
+npm run coverage
+```
+
+## Running Integration tests
+
+```bash
+# Step 1: Start Docker containers
+docker compose up -d
+
+# Step 2: Set up local AWS resources
+chmod +x ./scripts/local-aws-setup.sh
+./scripts/local-aws-setup.sh
+
+# Step 3: Run the integration tests
+npm run test:integration
+
+# Run a specific integration test
+npx hurl --test --verbose tests/integration/specific-file.hurl
+```
+
