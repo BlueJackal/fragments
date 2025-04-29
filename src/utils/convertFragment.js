@@ -1,158 +1,136 @@
 // src/utils/convertFragment.js
 
-const logger = require('../logger');
-const markdown = require('markdown-it')();
+const MarkdownIt = require('markdown-it');
+const TurndownService = require('turndown');
+const { parse: csvParse } = require('csv-parse/sync');
+const { Parser: Json2CsvParser } = require('json2csv');
 
 /**
- * Utility functions for converting fragments between different formats
- * Separated for ease of testing
+ * Map file extension to MIME type.
  */
-
-// Mapping extensions to mime types
-const extensionToContentType = {
-  '.txt': 'text/plain',
-  '.html': 'text/html',
-  '.md': 'text/markdown',
-  '.json': 'application/json',
-  '.yaml': 'application/yaml',
-  '.yml': 'application/yaml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.avif': 'image/avif',
-};
-
-// Get type from file extension
-function getContentTypeFromExtension(extension) {
-  const contentType = extensionToContentType[extension.toLowerCase()];
-  if (!contentType) {
-    logger.warn({ extension }, 'Unknown file extension');
-  }
-  return contentType || null;
+function getContentTypeFromExtension(ext) {
+  const mapping = {
+    '.txt': 'text/plain',
+    '.md': 'text/markdown',
+    '.html': 'text/html',
+    '.csv': 'text/csv',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+    '.avif': 'image/avif'
+  };
+  return mapping[ext.toLowerCase()] || null;
 }
 
-// Check if conversion is supported
-function isSupportedConversion(sourceType, targetType) {
-  // No conversion needed if types are the same
-  if (sourceType === targetType) {
-    return true;
-  }
+/**
+ * Determine if conversion between two types is supported.
+ */
+function isSupportedConversion(srcType, tgtType) {
+  // Identity conversion
+  if (srcType === tgtType) return true;
 
-  // Check if type is supported
-  switch (sourceType) {
-    case 'text/markdown':
-      return ['text/html', 'text/plain'].includes(targetType);
-    case 'text/html':
-      return ['text/plain'].includes(targetType);
-    case 'text/csv':
-      return ['text/plain', 'application/json'].includes(targetType);
-    case 'application/json':
-      return ['text/plain', 'application/yaml', 'application/yml'].includes(targetType);
-    case 'application/yaml':
-      return ['text/plain'].includes(targetType);
-    // TODO: Image conversion in assignment 3
-    default:
-      // Convert any other text-based type to text/plain
-      if (sourceType.startsWith('text/')) {
-        return targetType === 'text/plain';
-      }
-      return false;
-  }
+  // Any text/* -> text/plain
+  if (srcType.startsWith('text/') && tgtType === 'text/plain') return true;
+
+  // Markdown -> HTML
+  if (srcType === 'text/markdown' && tgtType === 'text/html') return true;
+
+  // CSV -> JSON
+  if (srcType === 'text/csv' && tgtType === 'application/json') return true;
+
+  return false;
 }
 
-// Convert fragment data between different formats
-function convertFragment(data, sourceType, targetType) {
-  logger.debug({ sourceType, targetType }, 'Converting fragment');
+/**
+ * Convert fragment data from srcType to tgtType. Returns a Buffer.
+ */
+function convertFragment(data, srcType, tgtType) {
+  // Normalize incoming data to string
+  let text;
+  if (Buffer.isBuffer(data)) {
+    text = data.toString('utf8');
+  } else if (typeof data === 'string') {
+    text = data;
+  } else {
+    text = String(data);
+  }
 
-  // If source and target are the same, no conversion needed
-  if (sourceType === targetType) {
-    logger.debug('No conversion necessary, types match');
+  // Identity: return original data
+  if (srcType === tgtType) {
     return data;
   }
 
-  // Check if this conversion is supported
-  if (!isSupportedConversion(sourceType, targetType)) {
-    logger.warn({ sourceType, targetType }, 'Unsupported conversion');
-    throw new Error(`Conversion from ${sourceType} to ${targetType} is not supported`);
+  // Markdown -> HTML
+  if (srcType === 'text/markdown' && tgtType === 'text/html') {
+    const md = new MarkdownIt();
+    return Buffer.from(md.render(text), 'utf8');
   }
 
-  // Make sure we're working with string data for text conversions
-  const textData = Buffer.isBuffer(data) ? data.toString() : data;
-
-  // Handle different conversion types
-  switch (sourceType) {
-    case 'text/markdown': {
-      if (targetType === 'text/html') {
-        // Convert Markdown to HTML
-        logger.debug('Converting Markdown to HTML');
-        const htmlContent = markdown.render(textData);
-        return Buffer.from(htmlContent);
-      }
-      if (targetType === 'text/plain') {
-        // Markdown to plaintext just returns the original text
-        return Buffer.from(textData);
-      }
-      break;
-    }
-    case 'text/html': {
-      if (targetType === 'text/plain') {
-        // Very basic HTML to text - in a real app you might use a better HTML->text converter
-        const plainText = textData.replace(/<[^>]*>/g, '');
-        return Buffer.from(plainText);
-      }
-      break;
-    }
-    case 'text/csv': {
-      if (targetType === 'text/plain') {
-        // CSV is already text
-        return Buffer.from(textData);
-      }
-      if (targetType === 'application/json') {
-        // Basic CSV to JSON conversion
-        // In a real app, you'd want a more robust CSV parser
-        const lines = textData.split('\n');
-        const headers = lines[0].split(',').map((h) => h.trim());
-        const result = [];
-
-        for (let i = 1; i < lines.length; i++) {
-          if (lines[i].trim() === '') continue;
-
-          const values = lines[i].split(',').map((v) => v.trim());
-          const obj = {};
-
-          headers.forEach((header, index) => {
-            obj[header] = values[index];
-          });
-
-          result.push(obj);
-        }
-
-        return Buffer.from(JSON.stringify(result));
-      }
-      break;
-    }
-    case 'application/json': {
-      if (targetType === 'text/plain') {
-        // JSON is already text
-        return Buffer.from(textData);
-      }
-      // For JSON to YAML, we'd need a YAML library
-      // Not implementing for now, but would go here
-      break;
-    }
-    default: {
-      // Any text format to plain text
-      if (sourceType.startsWith('text/') && targetType === 'text/plain') {
-        return Buffer.from(textData);
-      }
-    }
+  // Markdown -> Plain Text (passthrough)
+  if (srcType === 'text/markdown' && tgtType === 'text/plain') {
+    return Buffer.from(text, 'utf8');
   }
 
-  // If we reach here, conversion is not implemented
-  logger.warn({ sourceType, targetType }, 'Conversion not implemented');
-  throw new Error(`Conversion from ${sourceType} to ${targetType} is not implemented yet`);
+  // HTML -> Markdown
+  if (srcType === 'text/html' && tgtType === 'text/markdown') {
+    const turndown = new TurndownService();
+    return Buffer.from(turndown.turndown(text), 'utf8');
+  }
+
+  // HTML -> Plain Text (strip tags)
+  if (srcType === 'text/html' && tgtType === 'text/plain') {
+    const stripped = text.replace(/<[^>]*>/g, '');
+    return Buffer.from(stripped, 'utf8');
+  }
+
+  // Plain Text -> HTML (wrap in <pre>)
+  if (srcType === 'text/plain' && tgtType === 'text/html') {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return Buffer.from(`<pre>${escaped}</pre>`, 'utf8');
+  }
+
+  // Plain Text -> Markdown (passthrough)
+  if (srcType === 'text/plain' && tgtType === 'text/markdown') {
+    return Buffer.from(text, 'utf8');
+  }
+
+  // CSV -> JSON
+  if (srcType === 'text/csv' && tgtType === 'application/json') {
+    const records = csvParse(text, { columns: true, skip_empty_lines: true });
+    return Buffer.from(JSON.stringify(records, null, 2), 'utf8');
+  }
+
+  // JSON -> CSV
+  if (srcType === 'application/json' && tgtType === 'text/csv') {
+    let obj = JSON.parse(text);
+    if (!Array.isArray(obj)) obj = [obj];
+    const parser = new Json2CsvParser({ flatten: true });
+    return Buffer.from(parser.parse(obj), 'utf8');
+  }
+
+  // JSON -> Plain Text (passthrough)
+  if (srcType === 'application/json' && tgtType === 'text/plain') {
+    return Buffer.from(text, 'utf8');
+  }
+
+  // Plain Text -> JSON (wrap in JSON string)
+  if (srcType === 'text/plain' && tgtType === 'application/json') {
+    return Buffer.from(JSON.stringify(text), 'utf8');
+  }
+
+  // CSV -> Plain Text (passthrough)
+  if (srcType === 'text/csv' && tgtType === 'text/plain') {
+    return Buffer.from(text, 'utf8');
+  }
+
+  // Unsupported conversion
+  throw new Error(`Conversion from ${srcType} to ${tgtType} is not supported`);
 }
 
 module.exports = {
