@@ -10,17 +10,17 @@ const { Parser: Json2CsvParser } = require('json2csv');
  */
 function getContentTypeFromExtension(ext) {
   const mapping = {
-    '.txt': 'text/plain',
-    '.md': 'text/markdown',
+    '.txt':  'text/plain',
+    '.md':   'text/markdown',
     '.html': 'text/html',
-    '.csv': 'text/csv',
+    '.csv':  'text/csv',
     '.json': 'application/json',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
+    '.png':  'image/png',
+    '.jpg':  'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.webp': 'image/webp',
-    '.gif': 'image/gif',
-    '.avif': 'image/avif'
+    '.gif':  'image/gif',
+    '.avif': 'image/avif',
   };
   return mapping[ext.toLowerCase()] || null;
 }
@@ -33,7 +33,7 @@ function isSupportedConversion(srcType, tgtType) {
   if (srcType === tgtType) return true;
 
   // Any text/* -> text/plain
-  if (srcType.startsWith('text/') && tgtType === 'text/plain') return true;
+  if (tgtType === 'text/plain' && srcType.startsWith('text/')) return true;
 
   // Markdown -> HTML
   if (srcType === 'text/markdown' && tgtType === 'text/html') return true;
@@ -45,10 +45,10 @@ function isSupportedConversion(srcType, tgtType) {
 }
 
 /**
- * Convert fragment data from srcType to tgtType. Returns a Buffer.
+ * Convert the fragment data from srcType to tgtType. Returns a Buffer.
  */
 function convertFragment(data, srcType, tgtType) {
-  // Normalize incoming data to string
+  // Normalize input to string
   let text;
   if (Buffer.isBuffer(data)) {
     text = data.toString('utf8');
@@ -58,7 +58,7 @@ function convertFragment(data, srcType, tgtType) {
     text = String(data);
   }
 
-  // Identity: return original data
+  // Identity
   if (srcType === tgtType) {
     return data;
   }
@@ -82,6 +82,7 @@ function convertFragment(data, srcType, tgtType) {
 
   // HTML -> Plain Text (strip tags)
   if (srcType === 'text/html' && tgtType === 'text/plain') {
+    // Remove all HTML tags
     const stripped = text.replace(/<[^>]*>/g, '');
     return Buffer.from(stripped, 'utf8');
   }
@@ -119,7 +120,7 @@ function convertFragment(data, srcType, tgtType) {
     return Buffer.from(text, 'utf8');
   }
 
-  // Plain Text -> JSON (wrap in JSON string)
+  // Plain Text -> JSON (wrap in quotes)
   if (srcType === 'text/plain' && tgtType === 'application/json') {
     return Buffer.from(JSON.stringify(text), 'utf8');
   }
